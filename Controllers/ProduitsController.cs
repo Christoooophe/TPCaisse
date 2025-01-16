@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using TPCaisse.Data;
 using TPCaisse.Models;
+using TPCaisse.Models.ViewModel;
 
 namespace TPCaisse.Controllers
 {
@@ -22,7 +23,10 @@ namespace TPCaisse.Controllers
         // GET: Produits
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Produit.ToListAsync());
+            var produits = await _context.Produit
+                       .Include(p => p.Categorie)
+                       .ToListAsync();
+            return View(produits);
         }
 
         // GET: Produits/Details/5
@@ -46,7 +50,15 @@ namespace TPCaisse.Controllers
         // GET: Produits/Create
         public IActionResult Create()
         {
-            return View();
+            var viewModel = new ProduitViewModel
+            {
+                Categories = _context.Categorie.Select(c => new SelectListItem
+                {
+                    Value = c.ID.ToString(),
+                    Text = c.Nom
+                }).ToList()
+            };
+            return View(viewModel);
         }
 
         // POST: Produits/Create
@@ -54,15 +66,24 @@ namespace TPCaisse.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Nom,Description,Prix,Quantite,Image")] Produit produit)
+        public async Task<IActionResult> Create([Bind("Id,Nom,Description,Prix,Quantite,CategorieId,Image")] ProduitViewModel viewModel)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(produit);
+                var produit = new Produit
+                {
+                    Nom = viewModel.Nom,
+                    Description = viewModel.Description,
+                    Prix = viewModel.Prix,
+                    Quantite = viewModel.Quantite,
+                    CategorieId = viewModel.CategorieId,
+                    Image = viewModel.Image
+                };
+                _context.Produit.Add(produit);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
-            return View(produit);
+            return View(viewModel);
         }
 
         // GET: Produits/Edit/5
@@ -73,12 +94,27 @@ namespace TPCaisse.Controllers
                 return NotFound();
             }
 
-            var produit = await _context.Produit.FindAsync(id);
+            var produit = await _context.Produit.Include(p => p.Categorie).FirstOrDefaultAsync(p => p.Id == id);
             if (produit == null)
             {
                 return NotFound();
             }
-            return View(produit);
+            var viewModel = new ProduitViewModel
+            {
+                Nom = produit.Nom,
+                Description = produit.Description,
+                Prix = produit.Prix,
+                Quantite = produit.Quantite,
+                CategorieId = produit.CategorieId,
+                Image = produit.Image,
+                Categories = _context.Categorie
+                             .Select(c => new SelectListItem
+                             {
+                                 Value = c.ID.ToString(),
+                                 Text = c.Nom
+                             }).ToList()
+            };
+            return View(viewModel);
         }
 
         // POST: Produits/Edit/5
@@ -86,9 +122,9 @@ namespace TPCaisse.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("Id,Nom,Description,Prix,Quantite,Image")] Produit produit)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Nom,Description,Prix,Quantite,CategorieId,Image")] ProduitViewModel viewModel)
         {
-            if (id != produit.Id)
+            if (id != viewModel.Id)
             {
                 return NotFound();
             }
@@ -97,12 +133,20 @@ namespace TPCaisse.Controllers
             {
                 try
                 {
+                    var produit = _context.Produit.Find(id);
+                    produit.Nom = viewModel.Nom;
+                    produit.Description = viewModel.Description;
+                    produit.Prix = viewModel.Prix;
+                    produit.Quantite = viewModel.Quantite;
+                    produit.CategorieId = viewModel.CategorieId;
+                    produit.Image = viewModel.Image;
+
                     _context.Update(produit);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!ProduitExists(produit.Id))
+                    if (!ProduitExists(viewModel.Id))
                     {
                         return NotFound();
                     }
@@ -113,7 +157,7 @@ namespace TPCaisse.Controllers
                 }
                 return RedirectToAction(nameof(Index));
             }
-            return View(produit);
+            return View(viewModel);
         }
 
         // GET: Produits/Delete/5
