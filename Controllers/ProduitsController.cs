@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 using TPCaisse.Data;
 using TPCaisse.Models;
 using TPCaisse.Models.ViewModel;
@@ -38,6 +40,7 @@ namespace TPCaisse.Controllers
             }
 
             var produit = await _context.Produit
+                .Include(p => p.Categorie)
                 .FirstOrDefaultAsync(m => m.Id == id);
             if (produit == null)
             {
@@ -196,6 +199,28 @@ namespace TPCaisse.Controllers
         private bool ProduitExists(int id)
         {
             return _context.Produit.Any(e => e.Id == id);
+        }
+
+        [HttpPost]
+        private IActionResult AddToCart(Produit produit)
+        {
+            List<Produit> produits;
+            var panier = HttpContext.Session.GetString("Panier");
+
+            if (!string.IsNullOrEmpty(panier))
+            {
+                produits = JsonConvert.DeserializeObject<List<Produit>>(panier);
+            }
+            else
+            {
+                produits = new List<Produit>();
+            }
+
+            produits.Add(produit);
+
+            HttpContext.Session.SetString("Panier", JsonConvert.SerializeObject(produits));
+
+            return RedirectToAction("Index", "Panier");
         }
     }
 }

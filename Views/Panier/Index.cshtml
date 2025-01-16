@@ -1,0 +1,17 @@
+﻿@model Produit
+@{
+}
+
+<h1>Bienvenue dans votre panier</h1>
+
+@if (ViewBag.Panier != null) {
+	@foreach (var produit in ViewBag.Panier)
+	{
+		<div>
+			<p>@produit.Nom</p>
+			<p>@produit.Prix</p>
+			<p>@produit.Image</p>
+		</div>
+	}
+
+}

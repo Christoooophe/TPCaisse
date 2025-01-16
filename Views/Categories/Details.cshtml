@@ -16,6 +16,17 @@
         <dd class = "col-sm-10">
             @Html.DisplayFor(model => model.Nom)
         </dd>
+        <dt class="col-sm-2">
+            @Html.DisplayNameFor(model => model.ListeProduits)
+        </dt>
+        @foreach (var produit in ViewBag.produits)
+        {
+            <div>
+                <p>@produit.Nom</p>
+                <p>@produit.Prix</p>
+                <p>@produit.Image</p>
+            </div>
+        }
     </dl>
 </div>
 <div>

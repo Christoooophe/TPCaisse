@@ -35,6 +35,7 @@ namespace TPCaisse.Controllers
 
             var categorie = await _context.Categorie
                 .FirstOrDefaultAsync(m => m.ID == id);
+            ViewBag.produits = _context.Produit.Where(p => p.CategorieId == id).ToList();
             if (categorie == null)
             {
                 return NotFound();
